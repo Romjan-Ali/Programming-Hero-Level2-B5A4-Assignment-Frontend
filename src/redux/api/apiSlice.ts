@@ -18,7 +18,7 @@ export interface Book {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:4252/api',
+    baseUrl: 'https://programming-hero-level2-b5-a4-assig.vercel.app/api',
   }),
   endpoints: (builder) => ({
     getAllBooks: builder.query<Book[], void>({
