@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+// import { useParams } from 'react-router-dom'
 
 const mockAuthor = {
   id: 'amy-stevens',
@@ -22,7 +22,7 @@ const mockAuthor = {
 }
 
 const Author = () => {
-  const { authorId } = useParams()
+  // const { authorId } = useParams()
 
   // In a real app, you’d fetch author data using authorId
 

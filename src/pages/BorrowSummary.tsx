@@ -12,7 +12,7 @@ type BorrowSummaryProps = {
   data: BorrowedBook[]
 }
 
-const BorrowSummary: React.FC<BorrowSummaryProps> = ({
+const BorrowSummary: React.FC<Partial<BorrowSummaryProps>> = ({
   data = [
     {
       totalQuantity: 10,
