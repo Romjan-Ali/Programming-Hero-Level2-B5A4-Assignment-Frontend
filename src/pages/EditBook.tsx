@@ -1,31 +1,28 @@
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useCreateBookMutation } from '../redux/api/apiSlice'
+import { useParams, useNavigate } from 'react-router-dom'
+import {
+  useGetBookByIdQuery,
+  useUpdateBookMutation,
+} from '../redux/api/apiSlice'
 
-type Book = {
-  title: string
-  author: string
-  genre: string
-  isbn: string
-  description: string
-  copies: number
-  available: boolean
-  imageUrl?: string
-}
+import type { Book } from '../redux/api/apiSlice'
 
-const CreateBook = () => {
-  const [createBook, { isLoading, isError, error, isSuccess }] =
-    useCreateBookMutation()
+const EditBook = () => {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const {
+    data: book,
+    isLoading: isFetching,
+    isError,
+  } = useGetBookByIdQuery(id || '')
+  const [updateBook, { isLoading }] = useUpdateBookMutation()
 
-  const [formData, setFormData] = useState<Book>({
-    title: '',
-    author: '',
-    genre: 'FICTION',
-    isbn: '',
-    description: '',
-    copies: 1,
-    available: true,
-  })
+  const [formData, setFormData] = useState<Book | null>(null)
+
+  useEffect(() => {
+    if (book) setFormData(book)
+  }, [book])
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -33,6 +30,8 @@ const CreateBook = () => {
     >
   ) => {
     const { name, value, type } = e.target
+    if (!formData) return
+
     setFormData({
       ...formData,
       [name]:
@@ -44,47 +43,36 @@ const CreateBook = () => {
     })
   }
 
-  useEffect(() => {
-    console.log(formData)
-  }, [formData])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData || !id) return
+
     try {
-      const result = await createBook(formData).unwrap()
-      setFormData({
-        title: '',
-        author: '',
-        genre: 'FICTION',
-        isbn: '',
-        description: '',
-        copies: 1,
-        available: true,
-      })
-      if (result) toast.success('Book created successfully')
+      const result = await updateBook({
+        id,
+        updatedData: {
+          ...formData,
+        },
+      }).unwrap()
+
+      if (result) toast.success('Book updated successfully!')
+      navigate(`/books/${id}`)
     } catch (err) {
-      toast.error('Failed to create book')
+      toast.error('Failed to update book')
       console.error(err)
     }
-    console.log('Submitted Book:', formData)
   }
 
-  if (isLoading) return <div className="p-6 text-center">Loading...</div>
+  if (isFetching || !formData)
+    return <div className="p-6 text-center">Loading book data...</div>
+
   if (isError)
-    return (
-      <div className="p-6 text-center">Error getting server connection</div>
-    )
-  if (error) return <div className="p-6 text-center">Error creating book</div>
-  if (isSuccess) {
-    setTimeout(() => {
-      // window.location.reload()
-    }, 1000)
-  }
+    return <div className="p-6 text-center">Failed to load book data.</div>
 
   return (
     <>
       <div className="bg-gray-900 p-4 text-white text-center font-bold text-3xl">
-        Create New Book
+        Edit Book
       </div>
       <div className="container mx-auto p-4">
         <form
@@ -138,7 +126,7 @@ const CreateBook = () => {
           <input
             type="text"
             name="imageUrl"
-            value={formData.imageUrl}
+            value={formData.imageUrl ?? ''}
             onChange={handleChange}
             placeholder="Cover Image URL (Optional)"
             className="w-full p-2 border border-gray-300 rounded"
@@ -180,9 +168,10 @@ const CreateBook = () => {
 
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-900 cursor-pointer"
           >
-            Submit Book
+            {isLoading ? 'Updating...' : 'Update Book'}
           </button>
         </form>
       </div>
@@ -190,4 +179,4 @@ const CreateBook = () => {
   )
 }
 
-export default CreateBook
+export default EditBook

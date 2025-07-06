@@ -1,19 +1,90 @@
 import { Link } from 'react-router-dom'
-import { useGetAllBooksQuery } from '../redux/api/apiSlice'
+import {
+  useGetFilteredBooksQuery,
+  useGetAllGenresQuery,
+  useGetAllAuthorsQuery,
+} from '../redux/api/apiSlice'
+import { useState } from 'react'
+
+export interface Book {
+  _id: string
+  title: string
+  author: string
+  genre:
+    | 'FICTION'
+    | 'NON_FICTION'
+    | 'SCIENCE'
+    | 'HISTORY'
+    | 'BIOGRAPHY'
+    | 'FANTASY'
+    | string // extend or refine as needed
+  isbn: string
+  description: string
+  copies: number
+  available: boolean
+  createdAt: string
+  updatedAt: string
+  __v: number
+  imageUrl?: string
+}
 
 const Books = () => {
-  const { data: books, isLoading, isError } = useGetAllBooksQuery()
+  const [sortBy, setSortBy] = useState('asc')
+  const [selectedGenre, setSelectedGenre] = useState('ALL')
+  const [selectedAuthor, setSelectedAuthor] = useState('ALL')
 
-  if (isLoading) return <div className="p-6 text-center">Loading...</div>
-  if (isError || !books)
-    return <div className="p-6 text-center">Error loading book.</div>
+  /*   const {
+    data: allBooks,
+    isBooksLoading: isAllBooksLoading,
+    isBooksError: isAllBooksError,
+  } = useGetAllBooksQuery() */
+
+  const {
+    data: sortedBooks,
+    isLoading: isBooksLoading,
+    isError: isBooksError,
+  } = useGetFilteredBooksQuery(
+    {
+      filter: selectedGenre,
+      author: selectedAuthor,
+      sortBy: 'createdAt',
+      sort: sortBy,
+      limit: 0,
+    },
+    { refetchOnMountOrArgChange: true }
+  )
+
+  const {
+    data: genres,
+    isLoading: isGenresLoading,
+    isError: isGenresError,
+  } = useGetAllGenresQuery()
+
+  const {
+    data: authors,
+    isLoading: isAuthorsLoading,
+    isError: isAuthorsError,
+  } = useGetAllAuthorsQuery()
+
+  if (isBooksLoading || isGenresLoading || isAuthorsLoading)
+    return <div className="p-6 text-center">Loading...</div>
+
+  if (
+    isBooksError ||
+    !sortedBooks ||
+    isGenresError ||
+    !genres ||
+    isAuthorsError ||
+    !authors
+  )
+    return <div className="p-6 text-center">Error loading books.</div>
 
   return (
     <div>
       <div className="bg-gray-900 p-4 text-white text-center font-bold text-3xl">
         Books
       </div>
-      <div className="w-full bg-neutral-200 grid md:grid-cols-[20rem_1fr]">
+      <div className="w-full bg-neutral-200 grid sm:grid-cols-[20rem_1fr]">
         <section className="bg-white w-full md:w-80">
           <div className="sort-by p-4 space-y-4">
             <h4 className="text-xl font-bold relative h-12 uppercase">
@@ -21,32 +92,37 @@ const Books = () => {
               <span className="w-20 border-b border-neutral-400 absolute bottom-0 left-0"></span>
             </h4>
             <div className="space-y-4">
+              {}
               <div>
                 <input
-                  id="2"
+                  id="asc"
                   type="checkbox"
+                  checked={sortBy === 'asc'}
+                  onChange={() => setSortBy('asc')}
                   className="font-bold hover:text-fuchsia-600 cursor-pointer"
-                  value="Burt Geler"
+                  value="Newest First"
                 />
                 <label
                   className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="2"
+                  htmlFor="asc"
                 >
-                  Burt Geler
+                  Newest First
                 </label>
               </div>
               <div>
                 <input
-                  id="3"
+                  id="desc"
                   type="checkbox"
+                  checked={sortBy === 'desc'}
+                  onChange={() => setSortBy('desc')}
                   className="font-bold hover:text-fuchsia-600 cursor-pointer"
-                  value="Burt Geler"
+                  value="Oldest First"
                 />
                 <label
                   className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="3"
+                  htmlFor="desc"
                 >
-                  Burt Geler
+                  Oldest First
                 </label>
               </div>
             </div>
@@ -58,24 +134,27 @@ const Books = () => {
               <span className="w-20 border-b border-neutral-400 absolute bottom-0 left-0"></span>
             </h4>
             <div className="space-y-4">
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                All Categories
+              <div
+                onClick={() => setSelectedGenre('ALL')}
+                className={`${
+                  selectedGenre === 'ALL' ? 'text-fuchsia-600' : 'text-inherit'
+                } font-bold hover:text-fuchsia-600 capitalize cursor-pointer`}
+              >
+                all category
               </div>
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                Uncategorized
-              </div>
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                Drama
-              </div>
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                Mystery
-              </div>
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                Novels
-              </div>
-              <div className="font-bold hover:text-fuchsia-600 cursor-pointer">
-                Recipe Books
-              </div>
+              {genres?.map((genre, index) => (
+                <div
+                  key={index}
+                  onClick={() => setSelectedGenre(genre)}
+                  className={`${
+                    genre === selectedGenre
+                      ? 'text-fuchsia-600'
+                      : 'text-inherit'
+                  } font-bold hover:text-fuchsia-600 capitalize cursor-pointer`}
+                >
+                  {genre.toLowerCase()}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -87,38 +166,46 @@ const Books = () => {
             <div className="space-y-4">
               <div>
                 <input
-                  id="2"
+                  id="all"
                   type="checkbox"
-                  className="font-bold hover:text-fuchsia-600 cursor-pointer"
-                  value="Burt Geler"
+                  checked={selectedAuthor === 'ALL'}
+                  onChange={() => setSelectedAuthor('ALL')}
+                  className={`${
+                    selectedAuthor === 'ALL' ? 'text-fuchsia-600' : 'text-black'
+                  } font-bold hover:text-fuchsia-600 cursor-pointer`}
+                  value="All Author"
                 />
                 <label
                   className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="2"
+                  htmlFor="all"
                 >
-                  Burt Geler
+                  All Author
                 </label>
               </div>
-              <div>
-                <input
-                  id="3"
-                  type="checkbox"
-                  className="font-bold hover:text-fuchsia-600 cursor-pointer"
-                  value="Burt Geler"
-                />
-                <label
-                  className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="3"
-                >
-                  Burt Geler
-                </label>
-              </div>
+              {authors?.map((author, index) => (
+                <div key={index}>
+                  <input
+                    id={index.toString()}
+                    type="checkbox"
+                    checked={author === selectedAuthor}
+                    onChange={() => setSelectedAuthor(author)}
+                    className="font-bold hover:text-fuchsia-600 cursor-pointer"
+                    value="Burt Geler"
+                  />
+                  <label
+                    className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
+                    htmlFor={index.toString()}
+                  >
+                    {author}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
         </section>
         <section className="w-full">
           <div className="grid gap-6 p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {books?.map((book) => (
+            {sortedBooks?.map((book) => (
               <Link
                 key={book?._id}
                 to={`/books/${book._id}`}
@@ -128,11 +215,11 @@ const Books = () => {
                   src={
                     book?.imageUrl
                       ? book?.imageUrl
-                      : 'https://www.peeters-leuven.be/covers/no_cover.gif'
+                      : 'https://i.postimg.cc/PJrVp8wy/no-cover.png'
                   }
                   alt=""
                 />
-                <div className="text-xl font-bold text-center ">
+                <div className="mt-2 text-xl font-bold text-center ">
                   {book?.title}
                 </div>
                 <div className="text-lg text-center text-fuchsia-700">

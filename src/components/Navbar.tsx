@@ -21,7 +21,7 @@ const Navbar = ({ isMenuTriggered, setIsMenuTriggered }: NavbarProps) => {
         }`}
       ></div>
       <header>
-        <div className="max-xl:px-4 min-xl:px-24 py-4 flex justify-between items-center uppercase">
+        <div className="px-4 xl:px-24 py-4 flex justify-between items-center uppercase">
           <div>
             <Link to="/">
               <img src={logo} alt="Image Library Logo" className="w-52" />
@@ -33,18 +33,14 @@ const Navbar = ({ isMenuTriggered, setIsMenuTriggered }: NavbarProps) => {
               <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-black transition-all duration-500 group-hover:w-full"></span>
             </Link>
             <Link className="mx-4 relative inline-block group" to="/books">
-              <span className="relative">Browse Books</span>
+              <span className="relative">All Books</span>
               <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-black transition-all duration-500 group-hover:w-full"></span>{' '}
             </Link>
             <Link
               className="mx-4 relative inline-block group"
               to="/create-book"
             >
-              <span className="relative">Create Book</span>
-              <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-black transition-all duration-500 group-hover:w-full"></span>
-            </Link>
-            <Link className="mx-4 relative inline-block group" to="/authors">
-              <span className="relative">Authors</span>
+              <span className="relative">Add Book</span>
               <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-black transition-all duration-500 group-hover:w-full"></span>
             </Link>
             <Link
@@ -75,6 +71,16 @@ const Navbar = ({ isMenuTriggered, setIsMenuTriggered }: NavbarProps) => {
                   <Menu />
                 )}
               </button>
+              {isMenuTriggered ? null : (
+                <>
+                  <div className="mx-4">
+                    <SeparatorVertical className="text-gray-400" />
+                  </div>
+                  <Link className="mr-4" to="/search">
+                    <Search />
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>

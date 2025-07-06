@@ -1,46 +1,25 @@
-import React from 'react'
+import { useGetBorrowSummaryQuery } from '@/redux/api/apiSlice'
 
-type BorrowedBook = {
-  totalQuantity: number
-  book: {
-    title: string
-    isbn: string
-  }
-}
+const BorrowSummary = () => {
+  const { data, isLoading, isError } = useGetBorrowSummaryQuery()
 
-type BorrowSummaryProps = {
-  data: BorrowedBook[]
-}
+  if (isLoading)
+    return <div className="p-6 text-center">Loading...</div>
 
-const BorrowSummary: React.FC<Partial<BorrowSummaryProps>> = ({
-  data = [
-    {
-      totalQuantity: 10,
-      book: {
-        title: 'The Great Gatsby',
-        isbn: '9780743273565',
-      },
-    },
-    {
-      totalQuantity: 4,
-      book: {
-        title: 'The Hobbit',
-        isbn: '9780547928227',
-      },
-    },
-  ],
-}) => {
+  if (isError || !data)
+    return <div className="p-6 text-center">Error loading Borrow Summary.</div>
+
   return (
     <>
       <div className="bg-gray-900 p-4 text-white text-center font-bold text-3xl">
         Borrow Summary
       </div>
       <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded">
-        {data.length === 0 ? (
+        {data?.length === 0 ? (
           <p className="text-center text-gray-500">No borrowed books found.</p>
         ) : (
           <ul className="space-y-4">
-            {data.map((item, index) => (
+            {data?.map((item, index) => (
               <li
                 key={index}
                 className="p-4 bg-neutral-100 rounded shadow-sm hover:shadow-md transition"
