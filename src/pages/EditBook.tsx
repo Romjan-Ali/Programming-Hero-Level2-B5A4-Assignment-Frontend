@@ -108,7 +108,6 @@ const EditBook = () => {
       }
       check_image_url()
     }
-    console.log('form data image url', formData.imageUrl)
   }, [formData.imageUrl])
 
   interface ValidationErrors {
@@ -209,7 +208,6 @@ const EditBook = () => {
       if (!isImageVisible) {
         hasError = true
       }
-      console.log('has error in e', hasError)
     } else {
       if (formData.title.trim().length === 0) {
         errors.title = 'Book Title is required'
@@ -266,8 +264,6 @@ const EditBook = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log(!validateForm(undefined))
-
     if (!validateForm(undefined)) {
       toast.error('Please fix the validation errors')
       return
@@ -302,7 +298,6 @@ const EditBook = () => {
       toast.error('Failed to update book')
       console.error(err)
     }
-    console.log('Submitted Book:', formData)
   }
 
   if (isFetching) return <div className="p-6 text-center">Loading...</div>

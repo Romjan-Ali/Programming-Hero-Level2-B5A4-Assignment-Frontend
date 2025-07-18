@@ -68,7 +68,6 @@ const BookDetails = () => {
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedDateStr = event.target.value
     setDate(selectedDateStr)
-    console.log(event.target.value)
     const today = new Date()
     const minAllowedDate = new Date(today)
     minAllowedDate.setDate(today.getDate() + 4)

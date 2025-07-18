@@ -38,13 +38,13 @@ const Books = () => {
   const {
     data: genres,
     isLoading: isGenresLoading,
-    isError: isGenresError,
+    // isError: isGenresError,
   } = useGetAllGenresQuery()
 
   const {
     data: authors,
     isLoading: isAuthorsLoading,
-    isError: isAuthorsError,
+    // isError: isAuthorsError,
   } = useGetAllAuthorsQuery()
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const Books = () => {
   if (isBooksLoading || isGenresLoading || isAuthorsLoading)
     return <div className="p-6 text-center">Loading...</div>
 
-  if (
+  /*   if (
     isBooksError ||
     !updatedBooks ||
     isGenresError ||
@@ -96,7 +96,7 @@ const Books = () => {
       isAuthorsError,
       authors,
     })
-  }
+  } */
 
   return (
     <div className="flex flex-col flex-1">

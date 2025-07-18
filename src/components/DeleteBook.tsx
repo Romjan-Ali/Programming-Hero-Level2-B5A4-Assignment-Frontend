@@ -29,6 +29,7 @@ function DeleteBook({
       }
     } catch (err) {
       console.error('Failed to delete:', err)
+      toast.error('Failed to delete the book')
     }
     setDeleteButtonClicked(false)
   }
