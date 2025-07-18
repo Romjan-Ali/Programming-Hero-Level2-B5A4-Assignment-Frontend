@@ -124,7 +124,7 @@ export const apiSlice = createApi({
         method: 'PUT',
         body: updatedData,
       }),
-      invalidatesTags: ['Book'],
+      invalidatesTags: ['Book', 'FilteredBooks'],
     }),
     deleteBook: builder.mutation<DeleteBookResponse, string>({
       query: (id) => ({

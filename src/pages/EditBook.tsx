@@ -271,10 +271,22 @@ const EditBook = () => {
 
     if (!formData || !id) return
 
-    const updated_form_data: Book = isImageVisible
-      ? formData
-      : // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        (({ imageUrl, ...rest }) => rest)(formData)
+    const updated_form_data: Book = (() => {
+      const rawData = isImageVisible
+        ? formData
+        : // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          (({ imageUrl, ...rest }) => rest)(formData)
+
+      // Trim all string values
+      const trimmedData = Object.fromEntries(
+        Object.entries(rawData).map(([key, value]) => [
+          key,
+          typeof value === 'string' ? value.trim() : value,
+        ])
+      )
+
+      return trimmedData as Book
+    })()
 
     try {
       const result = await updateBook({
