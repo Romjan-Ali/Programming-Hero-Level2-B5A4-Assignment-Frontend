@@ -1,16 +1,48 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useGetSomeBooksQuery } from '../redux/api/apiSlice'
+import { useGetSomeBooksQuery, type Book } from '../redux/api/apiSlice'
+import { checkImageUrl } from '@/utils/checkImageUrl'
+import BookCard from '@/components/BookCard'
 
 const Home = () => {
+  const [updatedBooks, setUpdatedBooks] = useState<Book[]>([])
+
   const {
-    data: randomBooks = [],
+    data: randomBooks,
     isLoading,
     isError,
-  } = useGetSomeBooksQuery({ limit: 6 }) 
+    error,
+  } = useGetSomeBooksQuery({ limit: 6 })
+
+  useEffect(() => {
+    if (!randomBooks) return
+
+    setUpdatedBooks(randomBooks)
+
+    const validateImages = async () => {
+      const checkedBooks = await Promise.all(
+        randomBooks.map(async (book) => {
+          if (book?.imageUrl) {
+            const visible = await checkImageUrl(book.imageUrl)
+            return visible ? book : { ...book, imageUrl: undefined }
+          }
+          return book
+        })
+      )
+
+      setUpdatedBooks(checkedBooks)
+    }
+
+    validateImages()
+  }, [randomBooks])
+
+  useEffect(() => {
+    if (isError) {
+      setUpdatedBooks([])
+    }
+  }, [isError])
 
   if (isLoading) return <div className="p-6 text-center">Loading...</div>
-  if (isError || !randomBooks)
-    return <div className="p-6 text-center">Error loading book.</div>
 
   return (
     <>
@@ -59,38 +91,33 @@ const Home = () => {
           <h2 className="my-12 text-center text-bold text-4xl">
             Discover Your Next Book
           </h2>
-          <div className="grid max-sm:grid-cols-2 max-md:grid-cols-3 max-lg:grid-cols-4 max-xl:grid-cols-6 min-xl:grid-cols-6 mx-6 gap-6">
-            {randomBooks.map((book) => (
-              <Link
-                key={book?._id}
-                to={`/books/${book?._id}`}
-                className="card flex flex-col"
-              >
-                <img
-                  src={
-                    book?.imageUrl
-                      ? book?.imageUrl
-                      : 'https://www.peeters-leuven.be/covers/no_cover.gif'
-                  }
-                  alt={book?.title}
-                />
-                <div className="text-xl font-bold text-center ">
-                  {book?.title}
-                </div>
-                <div className="text-lg text-center text-fuchsia-700">
-                  {book?.author}
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="flex justify-center">
-            <Link
-              to="/books"
-              className="mt-6 border-black bg-black text-white px-6 py-3 font-medium hover:bg-[rgb(255,255,255,0.1)] hover:border-black hover:text-black border-2 transition cursor-pointer"
-            >
-              DISCOVER MORE BOOKS
-            </Link>
-          </div>
+          {error && 'status' in error && error.status === 404 ? (
+            <div className="mx-8 mt-4">
+              <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded">
+                <p className="text-center text-gray-500">No books found.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid max-sm:grid-cols-2 max-md:grid-cols-3 max-lg:grid-cols-4 max-xl:grid-cols-6 min-xl:grid-cols-6 mx-6 gap-6">
+                {updatedBooks.map((book) => (
+                  <BookCard
+                    key={book._id}
+                    book={book}
+                    noCoverImgLink="https://www.peeters-leuven.be/covers/no_cover.gif"
+                  />
+                ))}
+              </div>
+              <div className="flex justify-center">
+                <Link
+                  to="/books"
+                  className="mt-6 border-black bg-black text-white px-6 py-3 font-medium hover:bg-[rgb(255,255,255,0.1)] hover:border-black hover:text-black border-2 transition cursor-pointer"
+                >
+                  DISCOVER MORE BOOKS
+                </Link>
+              </div>
+            </>
+          )}
         </section>
         {/*
           <section className="mt-20">

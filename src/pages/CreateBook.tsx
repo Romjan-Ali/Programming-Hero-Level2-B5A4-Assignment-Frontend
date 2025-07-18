@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { useCreateBookMutation } from '../redux/api/apiSlice'
+import { BadgeCheck, CircleX, LoaderCircle } from 'lucide-react'
+import { checkImageUrl } from '@/utils/checkImageUrl'
 
 type Book = {
   title: string
@@ -14,6 +17,25 @@ type Book = {
 }
 
 const CreateBook = () => {
+  const navigate = useNavigate()
+
+  const [inputError, setInputError] = useState<{
+    title: string | null
+    author: string | null
+    genre: string | null
+    isbn: string | null
+    description: string | null
+  }>({
+    title: null,
+    author: null,
+    genre: null,
+    isbn: null,
+    description: null,
+  })
+
+  const [isImageVisible, setIsImageVisible] = useState(false)
+  const [isVerifyingImgUrl, setIsVerifyingImgUrl] = useState(false)
+
   const [createBook, { isLoading, isError, error, isSuccess }] =
     useCreateBookMutation()
 
@@ -33,7 +55,7 @@ const CreateBook = () => {
     >
   ) => {
     const { name, value, type } = e.target
-    setFormData({
+    let updated_form_data = {
       ...formData,
       [name]:
         type === 'checkbox'
@@ -41,17 +63,207 @@ const CreateBook = () => {
           : type === 'number'
           ? +value
           : value,
-    })
+    }
+
+    if (type === 'number') {
+      if (updated_form_data.copies > 0) {
+        updated_form_data = { ...updated_form_data, available: true }
+      } else {
+        updated_form_data = { ...updated_form_data, available: false }
+      }
+    } else if (type === 'checkbox') {
+      if (updated_form_data.available) {
+        updated_form_data = { ...updated_form_data, copies: 1 }
+      } else {
+        updated_form_data = { ...updated_form_data, copies: 0 }
+      }
+    }
+
+    setFormData(updated_form_data)
   }
 
   useEffect(() => {
-    console.log(formData)
-  }, [formData])
+    if (formData.imageUrl && formData.imageUrl?.trim().length > 0) {
+      const check_image_url = async () => {
+        setIsVerifyingImgUrl(true)
+        const isValid = await checkImageUrl(formData.imageUrl!)
+        setIsImageVisible(isValid)
+        setIsVerifyingImgUrl(false)
+      }
+      check_image_url()
+    }
+    console.log('form data image url', formData.imageUrl)
+  }, [formData.imageUrl])
+
+  interface ValidationErrors {
+    title: string | null
+    author: string | null
+    genre: string | null
+    isbn: string | null
+    description: string | null
+  }
+
+  type ValidateFormEvent =
+    | React.FocusEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    | undefined
+
+  const validateForm = (e: ValidateFormEvent): boolean => {
+    let hasError = false
+    const errors: ValidationErrors = {
+      title: null,
+      author: null,
+      genre: null,
+      isbn: null,
+      description: null,
+    }
+
+    if (e) {
+      const { name } = e.target
+
+      if (name && name === 'title' && formData.title.trim().length === 0) {
+        errors.title = 'Book Title is required'
+        hasError = true
+      } else if (name && name === 'title' && formData.title.trim().length < 3) {
+        errors.title = 'Book Title should be at least 3 characters'
+        hasError = true
+      } else if (
+        name &&
+        name === 'title' &&
+        formData.title.trim().length > 80
+      ) {
+        errors.title = 'Book Title should be at most 80 characters'
+        hasError = true
+      }
+
+      if (name && name === 'author' && formData.author.trim().length === 0) {
+        errors.author = 'Author name is required'
+        hasError = true
+      } else if (
+        name &&
+        name === 'author' &&
+        formData.author.trim().length < 3
+      ) {
+        errors.author = 'Author name should be at least 3 characters'
+        hasError = true
+      } else if (
+        name &&
+        name === 'author' &&
+        formData.author.trim().length > 60
+      ) {
+        errors.author = 'Author name should be at most 60 characters'
+        hasError = true
+      }
+
+      if (name && name === 'isbn' && formData.isbn.trim().length === 0) {
+        errors.isbn = 'ISBN is required'
+        hasError = true
+      } else if (name && name === 'isbn' && formData.isbn.trim().length < 5) {
+        errors.isbn = 'ISBN should be at least 5 characters'
+        hasError = true
+      } else if (name && name === 'isbn' && formData.isbn.trim().length > 10) {
+        errors.isbn = 'ISBN should be at most 10 characters'
+        hasError = true
+      }
+
+      if (
+        name &&
+        name === 'description' &&
+        formData.description.trim().length === 0
+      ) {
+        errors.description = 'Description is required'
+        hasError = true
+      } else if (
+        name &&
+        name === 'description' &&
+        formData.description.trim().length < 15
+      ) {
+        errors.description = 'Description should be at least 15 characters'
+        hasError = true
+      } else if (
+        name &&
+        name === 'description' &&
+        formData.description.trim().length > 200
+      ) {
+        errors.description = 'Description should be at most 200 characters'
+        hasError = true
+      }
+
+      if (!isImageVisible) {
+        hasError = true
+      }
+      console.log('has error in e', hasError)
+    } else {
+      if (formData.title.trim().length === 0) {
+        errors.title = 'Book Title is required'
+        hasError = true
+      } else if (formData.title.trim().length < 3) {
+        errors.title = 'Book Title should be at least 10 characters'
+        hasError = true
+      } else if (formData.title.trim().length > 80) {
+        errors.title = 'Book Title should be at most 80 characters'
+        hasError = true
+      }
+
+      if (formData.author.trim().length === 0) {
+        errors.author = 'Author name is required'
+        hasError = true
+      } else if (formData.author.trim().length < 3) {
+        errors.author = 'Author name should be at least 3 characters'
+        hasError = true
+      } else if (formData.author.trim().length > 60) {
+        errors.author = 'Author name should be at most 60 characters'
+        hasError = true
+      }
+
+      if (formData.isbn.trim().length === 0) {
+        errors.isbn = 'ISBN is required'
+        hasError = true
+      } else if (formData.isbn.trim().length < 5) {
+        errors.isbn = 'ISBN should be at least 5 characters'
+        hasError = true
+      } else if (formData.isbn.trim().length > 10) {
+        errors.isbn = 'ISBN should be at most 10 characters'
+        hasError = true
+      }
+
+      if (formData.description.trim().length === 0) {
+        errors.description = 'Description is required'
+        hasError = true
+      } else if (formData.description.trim().length < 15) {
+        errors.description = 'Description should be at least 15 characters'
+        hasError = true
+      } else if (formData.description.trim().length > 200) {
+        errors.description = 'Description should be at most 200 characters'
+        hasError = true
+      }
+
+      if (formData.imageUrl && formData.imageUrl !== '' && !isImageVisible) {
+        hasError = true
+      }
+    }
+
+    setInputError(errors)
+    return !hasError
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log(!validateForm(undefined))
+
+    if (!validateForm(undefined)) {
+      toast.error('Please fix the validation errors')
+      return
+    }
+
+    const updated_form_data: Book = isImageVisible
+      ? formData
+      : // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (({ imageUrl, ...rest }) => rest)(formData)
+
     try {
-      const result = await createBook(formData).unwrap()
+      await createBook(updated_form_data).unwrap()
       setFormData({
         title: '',
         author: '',
@@ -61,7 +273,6 @@ const CreateBook = () => {
         copies: 1,
         available: true,
       })
-      if (result) toast.success('Book created successfully')
     } catch (err) {
       toast.error('Failed to create book')
       console.error(err)
@@ -69,17 +280,20 @@ const CreateBook = () => {
     console.log('Submitted Book:', formData)
   }
 
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success('Book created successfully')
+      navigate('/books')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess])
+
   if (isLoading) return <div className="p-6 text-center">Loading...</div>
   if (isError)
     return (
       <div className="p-6 text-center">Error getting server connection</div>
     )
   if (error) return <div className="p-6 text-center">Error creating book</div>
-  if (isSuccess) {
-    setTimeout(() => {
-      // window.location.reload()
-    }, 1000)
-  }
 
   return (
     <>
@@ -91,76 +305,151 @@ const CreateBook = () => {
           onSubmit={handleSubmit}
           className="max-w-xl mx-auto bg-white shadow-md p-6 rounded space-y-4"
         >
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="Book Title"
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
+          <div>
+            <input
+              type="text"
+              name="title"
+              min={3}
+              max={80}
+              value={formData.title}
+              onChange={handleChange}
+              onBlur={validateForm}
+              placeholder="Book Title"
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            />
+            {inputError.title ? (
+              <div className="text-red-600 text-sm mt-1">
+                {inputError.title}
+              </div>
+            ) : null}
+          </div>
 
-          <input
-            type="text"
-            name="author"
-            value={formData.author}
-            onChange={handleChange}
-            placeholder="Author"
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
+          <div>
+            <input
+              type="text"
+              name="author"
+              min={3}
+              max={60}
+              value={formData.author}
+              onChange={handleChange}
+              onBlur={validateForm}
+              placeholder="Author"
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            />
+            {inputError.author ? (
+              <div className="text-red-600 text-sm mt-1">
+                {inputError.author}
+              </div>
+            ) : null}
+          </div>
 
-          <select
-            name="genre"
-            value={formData.genre}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          >
-            <option value="FICTION">Fiction</option>
-            <option value="NON_FICTION">Non-Fiction</option>
-            <option value="SCIENCE">Science</option>
-            <option value="HISTORY">History</option>
-            <option value="BIOGRAPHY">Biography</option>
-            <option value="FANTASY">Fantasy</option>
-          </select>
+          <div>
+            <select
+              name="genre"
+              value={formData.genre}
+              onChange={handleChange}
+              onBlur={validateForm}
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            >
+              <option value="FICTION">Fiction</option>
+              <option value="NON_FICTION">Non-Fiction</option>
+              <option value="SCIENCE">Science</option>
+              <option value="HISTORY">History</option>
+              <option value="BIOGRAPHY">Biography</option>
+              <option value="FANTASY">Fantasy</option>
+            </select>
+            {inputError.genre ? (
+              <div className="text-red-600 text-sm mt-1">
+                {inputError.genre}
+              </div>
+            ) : null}
+          </div>
 
-          <input
-            type="text"
-            name="isbn"
-            value={formData.isbn}
-            onChange={handleChange}
-            placeholder="ISBN"
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
+          <div>
+            <input
+              type="text"
+              name="isbn"
+              min={5}
+              max={12}
+              value={formData.isbn}
+              onChange={handleChange}
+              onBlur={validateForm}
+              placeholder="ISBN"
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            />
+            {inputError.isbn ? (
+              <div className="text-red-600 text-sm mt-1">{inputError.isbn}</div>
+            ) : null}
+          </div>
 
-          <input
-            type="text"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={handleChange}
-            placeholder="Cover Image URL (Optional)"
-            className="w-full p-2 border border-gray-300 rounded"
-          />
+          <div>
+            <input
+              type="text"
+              name="imageUrl"
+              value={formData.imageUrl}
+              onChange={handleChange}
+              onBlur={validateForm}
+              placeholder="Cover Image URL (Optional)"
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+            {!formData.imageUrl ? null : isVerifyingImgUrl ? (
+              <div className="text-blue-800 text-sm mt-1 flex items-center space-x-2">
+                <span className="animate-spin">
+                  <LoaderCircle size={16} />
+                </span>
+                <span>Verifying image URL</span>
+              </div>
+            ) : isImageVisible ? (
+              <div className="text-green-700 text-sm mt-1 flex items-center space-x-2">
+                <span>
+                  <BadgeCheck size={16} />
+                </span>
+                <span>Verified image URL</span>
+              </div>
+            ) : !isImageVisible ? (
+              <div className="text-red-600 text-sm mt-1 flex items-center space-x-2">
+                <span>
+                  <CircleX size={16} />
+                </span>
+                <span>
+                  Invalid image URL or image may not visible of this link
+                </span>
+              </div>
+            ) : null}
+          </div>
 
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Description"
-            rows={3}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
+          <div>
+            <textarea
+              name="description"
+              minLength={15}
+              maxLength={200}
+              rows={3}
+              value={formData.description}
+              onChange={handleChange}
+              onBlur={validateForm}
+              placeholder="Description"
+              className="w-full p-2 border border-gray-300 rounded"
+              required
+            />
+            {inputError.description ? (
+              <div className="text-red-600 text-sm mt-1">
+                {inputError.description}
+              </div>
+            ) : null}
+          </div>
 
           <input
             type="number"
             name="copies"
             value={formData.copies}
             onChange={handleChange}
+            onBlur={validateForm}
             placeholder="Number of Copies"
-            min={1}
+            min={0}
             className="w-full p-2 border border-gray-300 rounded"
             required
           />

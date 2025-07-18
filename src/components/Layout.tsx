@@ -11,23 +11,22 @@ const Layout = ({ children }: LayoutProps) => {
   const [isMenuTriggered, setIsMenuTriggered] = useState(false)
 
   return (
-    <>
-      <div className='min-h-lvh'>
-        <Navbar
+    <div className="min-h-lvh flex flex-col">
+      <Navbar
+        isMenuTriggered={isMenuTriggered}
+        setIsMenuTriggered={setIsMenuTriggered}
+      />
+      {isMenuTriggered ? (
+        <Menu
           isMenuTriggered={isMenuTriggered}
           setIsMenuTriggered={setIsMenuTriggered}
         />
-        {isMenuTriggered ? (
-          <Menu
-            isMenuTriggered={isMenuTriggered}
-            setIsMenuTriggered={setIsMenuTriggered}
-          />
-        ) : (
-          <main>{children}</main>
-        )}
-      </div>
+      ) : (
+        <main className="flex flex-col flex-1">{children}</main>
+      )}
+
       <Footer />
-    </>
+    </div>
   )
 }
 

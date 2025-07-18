@@ -1,37 +1,18 @@
-import { Link } from 'react-router-dom'
 import {
   useGetFilteredBooksQuery,
   useGetAllGenresQuery,
   useGetAllAuthorsQuery,
+  type Book,
 } from '../redux/api/apiSlice'
-import { useState } from 'react'
-
-export interface Book {
-  _id: string
-  title: string
-  author: string
-  genre:
-    | 'FICTION'
-    | 'NON_FICTION'
-    | 'SCIENCE'
-    | 'HISTORY'
-    | 'BIOGRAPHY'
-    | 'FANTASY'
-    | string // extend or refine as needed
-  isbn: string
-  description: string
-  copies: number
-  available: boolean
-  createdAt: string
-  updatedAt: string
-  __v: number
-  imageUrl?: string
-}
+import { useEffect, useState } from 'react'
+import { checkImageUrl } from '@/utils/checkImageUrl'
+import BookCard from '@/components/BookCard'
 
 const Books = () => {
-  const [sortBy, setSortBy] = useState('asc')
+  const [sortBy, setSortBy] = useState('desc')
   const [selectedGenre, setSelectedGenre] = useState('ALL')
   const [selectedAuthor, setSelectedAuthor] = useState('ALL')
+  const [updatedBooks, setUpdatedBooks] = useState<Book[]>([])
 
   /*   const {
     data: allBooks,
@@ -66,25 +47,63 @@ const Books = () => {
     isError: isAuthorsError,
   } = useGetAllAuthorsQuery()
 
+  useEffect(() => {
+    if (!sortedBooks) return
+
+    setUpdatedBooks(sortedBooks)
+
+    const validateImages = async () => {
+      const checkedBooks = await Promise.all(
+        sortedBooks.map(async (book) => {
+          if (book?.imageUrl) {
+            const visible = await checkImageUrl(book.imageUrl)
+            return visible ? book : { ...book, imageUrl: undefined }
+          }
+          return book
+        })
+      )
+
+      setUpdatedBooks(checkedBooks)
+    }
+
+    validateImages()
+  }, [sortedBooks])
+
+  useEffect(() => {
+    if (isBooksError) {
+      setSelectedGenre('ALL')
+      setSelectedAuthor('ALL')
+      setUpdatedBooks([])
+    }
+  }, [isBooksError])
+
   if (isBooksLoading || isGenresLoading || isAuthorsLoading)
     return <div className="p-6 text-center">Loading...</div>
 
   if (
     isBooksError ||
-    !sortedBooks ||
+    !updatedBooks ||
     isGenresError ||
     !genres ||
     isAuthorsError ||
     !authors
-  )
-    return <div className="p-6 text-center">Error loading books.</div>
+  ) {
+    console.log('Error Loading Books', {
+      isBooksError,
+      updatedBooks,
+      isGenresError,
+      genres,
+      isAuthorsError,
+      authors,
+    })
+  }
 
   return (
-    <div>
+    <div className="flex flex-col flex-1">
       <div className="bg-gray-900 p-4 text-white text-center font-bold text-3xl">
         Books
       </div>
-      <div className="w-full bg-neutral-200 grid sm:grid-cols-[20rem_1fr]">
+      <div className="w-full bg-neutral-200 grid sm:grid-cols-[20rem_1fr] flex-col flex-1">
         <section className="bg-white w-full md:w-80">
           <div className="sort-by p-4 space-y-4">
             <h4 className="text-xl font-bold relative h-12 uppercase">
@@ -95,32 +114,32 @@ const Books = () => {
               {}
               <div>
                 <input
-                  id="asc"
+                  id="desc"
                   type="checkbox"
-                  checked={sortBy === 'asc'}
-                  onChange={() => setSortBy('asc')}
+                  checked={sortBy === 'desc'}
+                  onChange={() => setSortBy('desc')}
                   className="font-bold hover:text-fuchsia-600 cursor-pointer"
                   value="Newest First"
                 />
                 <label
                   className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="asc"
+                  htmlFor="desc"
                 >
                   Newest First
                 </label>
               </div>
               <div>
                 <input
-                  id="desc"
+                  id="asc"
                   type="checkbox"
-                  checked={sortBy === 'desc'}
-                  onChange={() => setSortBy('desc')}
+                  checked={sortBy === 'asc'}
+                  onChange={() => setSortBy('asc')}
                   className="font-bold hover:text-fuchsia-600 cursor-pointer"
                   value="Oldest First"
                 />
                 <label
                   className="ml-2 font-bold hover:text-fuchsia-600 cursor-pointer"
-                  htmlFor="desc"
+                  htmlFor="asc"
                 >
                   Oldest First
                 </label>
@@ -204,28 +223,20 @@ const Books = () => {
           </div>
         </section>
         <section className="w-full">
+          {isBooksError ? (
+            <div className="mx-8 mt-4">
+              <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded">
+                <p className="text-center text-gray-500">No books found.</p>
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-6 p-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sortedBooks?.map((book) => (
-              <Link
-                key={book?._id}
-                to={`/books/${book._id}`}
-                className="card flex flex-col"
-              >
-                <img
-                  src={
-                    book?.imageUrl
-                      ? book?.imageUrl
-                      : 'https://i.postimg.cc/PJrVp8wy/no-cover.png'
-                  }
-                  alt=""
-                />
-                <div className="mt-2 text-xl font-bold text-center ">
-                  {book?.title}
-                </div>
-                <div className="text-lg text-center text-fuchsia-700">
-                  {book?.author}
-                </div>
-              </Link>
+            {updatedBooks?.map((book) => (
+              <BookCard
+                key={book._id}
+                book={book}
+                noCoverImgLink="https://i.postimg.cc/PJrVp8wy/no-cover.png"
+              />
             ))}
           </div>
         </section>

@@ -3,7 +3,6 @@ import './App.css'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Books from './pages/Books'
-import BorrowBook from './pages/BorrowBook'
 import Author from './pages/Author'
 import BookDetails from './pages/BookDetails'
 import CreateBook from './pages/CreateBook'
@@ -19,7 +18,6 @@ const App = () => {
         <Route path="books" element={<Books />} />
         <Route path="books/:id" element={<BookDetails />} />
         <Route path="create-book" element={<CreateBook />} />
-        <Route path="borrow/:bookId" element={<BorrowBook />} />
         <Route path="borrow-summary" element={<BorrowSummary />} />
         <Route path="author/:id" element={<Author />} />
         <Route path="search" element={<Search />} />

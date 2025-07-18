@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { SquarePen, Trash } from 'lucide-react'
 import {
   useGetBookByIdQuery,
   useBorrowBookMutation,
-  useDeleteBookMutation,
   type Book,
 } from '../redux/api/apiSlice'
-import { checkImageUrl } from '@/components/utils/checkImageUrl'
+import { checkImageUrl } from '@/utils/checkImageUrl'
 import toast from 'react-hot-toast'
+import { SquarePen, Trash } from 'lucide-react'
+import DeleteBook from '@/components/DeleteBook'
 
 const BookDetails = () => {
   const { id } = useParams()
@@ -19,8 +19,17 @@ const BookDetails = () => {
   const [date, setDate] = useState('')
   const [deleteButtonClicked, setDeleteButtonClicked] = useState(false)
 
+  interface InputError {
+    copies: string | null
+    dueDate: string | null
+  }
+
+  const [inputError, setInputError] = useState<InputError>({
+    copies: null,
+    dueDate: null,
+  })
+
   const { data: book, isLoading, isError } = useGetBookByIdQuery(id || '')
-  const [deleteBook] = useDeleteBookMutation()
 
   useEffect(() => {
     const verify = async () => {
@@ -41,51 +50,74 @@ const BookDetails = () => {
 
   const handleCopiesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setCopies(Number(event.target.value))
+    setInputError({ ...inputError, copies: null })
+    if (book && Number(event.target.value) > book?.copies) {
+      setInputError({
+        ...inputError,
+        copies: 'Copies should be at most total available books',
+      })
+    }
+    if (Number(event.target.value) === 0) {
+      setInputError({
+        ...inputError,
+        copies: 'Copies should be at least 1',
+      })
+    }
   }
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(event.target.value)
+    const selectedDateStr = event.target.value
+    setDate(selectedDateStr)
+    console.log(event.target.value)
+    const today = new Date()
+    const minAllowedDate = new Date(today)
+    minAllowedDate.setDate(today.getDate() + 4)
+
+    setInputError({ ...inputError, dueDate: null })
+
+    const selectedDate = new Date(selectedDateStr)
+    selectedDate.setHours(0, 0, 0, 0)
+    minAllowedDate.setHours(0, 0, 0, 0)
+
+    if (selectedDate < minAllowedDate) {
+      setInputError({
+        ...inputError,
+        dueDate: 'Due date should be at least 5 days from today',
+      })
+    } else {
+      setInputError({ ...inputError, dueDate: null })
+    }
   }
 
   const handleSubmit = async () => {
-    if (!book || !date) {
-      alert('Please select a due date.')
-      return
-    }
-
-    const selectedDate = new Date(date)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // remove time part
-
-    if (selectedDate < today) {
-      alert('Due date cannot be in the past.')
-      return
+    if (inputError?.copies || inputError.dueDate) {
+      toast.error('Please fix the validation errors')
+      if (inputError?.copies) {
+        return
+      }
+      if (inputError?.dueDate) {
+        return
+      }
     }
 
     try {
+      if (!book?._id) {
+        toast.error('Book ID is missing.')
+        return
+      }
       const res = await borrowBook({
         book: book._id,
         quantity: copies,
         dueDate: new Date(date).toISOString(),
       }).unwrap()
       toast.success(res.message)
+      setTimeout(() => {
+        navigate(`/borrow-summary`)
+      }, 500)
     } catch (err) {
       console.error('Borrow failed:', err)
       toast.error('Failed to borrow the book.')
     }
-  }
-
-  const handleDeleteConfirmationClick = async () => {
-    const bookTitle = book?.title
-    try {
-      const res = await deleteBook(book?._id as string).unwrap()
-      console.log(res)
-    } catch (err) {
-      console.error('Failed to delete:', err)
-    }
-    setDeleteButtonClicked(false)
-    navigate('/books')
-    toast.success(`Successfully deleted the book: ${bookTitle}`)
   }
 
   if (isLoading) return <div className="p-6 text-center">Loading...</div>
@@ -93,29 +125,12 @@ const BookDetails = () => {
     return <div className="p-6 text-center">Error loading book.</div>
   return (
     <>
-      {deleteButtonClicked ? (
-        <div className="flex fixed top-0 right-0 bottom-0 left-0 justify-center items-center bg-[rgba(0,0,0,0.7)] w-full h-lvh z-10">
-          <div className="bg-white p-8 space-y-4 max-w-80">
-            <div className="text-justify">
-              Are you sure you want to delete the book?
-            </div>
-            <div className="flex justify-between max-w-40 ml-auto">
-              <button
-                className="px-4 py-2 bg-gray-700 text-white font-bold hover:bg-gray-900 cursor-pointer"
-                onClick={() => setDeleteButtonClicked(false)}
-              >
-                No
-              </button>
-              <button
-                className="px-4 py-2 bg-red-500 text-white font-bold hover:bg-red-700 cursor-pointer"
-                onClick={handleDeleteConfirmationClick}
-              >
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <DeleteBook
+        book={book}
+        deleteButtonClicked={deleteButtonClicked}
+        setDeleteButtonClicked={setDeleteButtonClicked}
+        triggeredFromComponent="BookDetails"
+      />
 
       <section>
         <div className="bg-gray-900 p-4 text-white text-center font-bold text-3xl">
@@ -138,9 +153,9 @@ const BookDetails = () => {
               <h3 className="text-2xl font-semibold mb-2 max-md:mt-4">
                 {book?.title}
               </h3>
-              <Link 
-              to={`/edit-book/${book?._id}`}
-              className="text-blue-500 flex space-x-2 cursor-pointer"
+              <Link
+                to={`/edit-book/${book?._id}`}
+                className="text-blue-500 flex space-x-2 cursor-pointer"
               >
                 <span>Edit</span>{' '}
                 <span>
@@ -170,60 +185,88 @@ const BookDetails = () => {
                 <span className="text-gray-500 font-bold w-48">
                   Available Copies:
                 </span>
-                <span className="font-bold">{book?.copies}</span>
+                {book?.copies === 0 ? (
+                  <span className="font-bold text-red-600">Not available</span>
+                ) : (
+                  <span className="font-bold">{book?.copies}</span>
+                )}
               </div>
             </div>
+            {book?.copies !== 0 ? (
+              <>
+                <h3 className="text-2xl font-semibold mb-2 mt-8">
+                  Form to Borrow
+                </h3>
 
-            <h3 className="text-2xl font-semibold mb-2 mt-8">Form to Borrow</h3>
+                {/* Borrow Inputs */}
+                <div className="flex items-center gap-x-4 mt-4">
+                  <span className="text-gray-500 font-bold w-48">
+                    Copies to Borrow:
+                  </span>
+                  <input
+                    min={1}
+                    max={book.copies}
+                    value={copies}
+                    type="number"
+                    placeholder="Copies to Borrow"
+                    onChange={handleCopiesChange}
+                    className="w-20 p-2 border-2 border-gray-300 outline-none"
+                  />
+                </div>
+                {inputError.copies ? (
+                  <div className="text-red-600 text-sm mt-1">
+                    {inputError.copies}
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-x-4 mt-2">
+                  <span className="text-gray-500 font-bold w-48">
+                    Due Date:
+                  </span>
+                  <input
+                    value={date}
+                    type="date"
+                    min={
+                      new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
+                        .toISOString()
+                        .split('T')[0]
+                    }
+                    onChange={handleDateChange}
+                    onBlur={handleDateChange}
+                    className="w-40 p-2 border-2 border-gray-300 outline-none"
+                  />
+                </div>
+                {inputError.dueDate ? (
+                  <div className="text-red-600 text-sm mt-1">
+                    {inputError.dueDate}
+                  </div>
+                ) : null}
 
-            {/* Borrow Inputs */}
-            <div className="flex items-center gap-x-4 mt-4">
-              <span className="text-gray-500 font-bold w-48">
-                Copies to Borrow:
+                {/* Submit Button */}
+                <div className="flex mt-4 items-center">
+                  <button
+                    className="px-4 py-2 drop-shadow-xl bg-white text-black font-medium cursor-pointer"
+                    style={{
+                      boxShadow:
+                        '2px 2px 16px 0 rgba(0, 0, 0, 0.1), -2px -2px 16px 0 rgba(0, 0, 0, 0.1)',
+                    }}
+                    onClick={handleSubmit}
+                  >
+                    BORROW NOW
+                  </button>
+                </div>
+              </>
+            ) : null}
+
+            <div className="mt-10 border-t-2 border-gray-300"></div>
+            <div className="mt-10 flex justify-center">
+              <span className="inline-flex border-1 border-red-300 hover:border-red-600 transition duration-500">
+                <button
+                  className="flex items-center px-4 py-2 bg-white text-red-600 font-medium cursor-pointer hover:shadow-[2px_2px_16px_rgba(0,0,0,0.1),-2px_-2px_16px_rgba(0,0,0,0.1)] hover:drop-shadow-xl hover:text-white hover:bg-red-600 transition-all duration-500"
+                  onClick={() => setDeleteButtonClicked(true)}
+                >
+                  <span className="mr-2">Delete the Book</span> <Trash />
+                </button>
               </span>
-              <input
-                value={copies}
-                type="number"
-                placeholder="Copies to Borrow"
-                min={1}
-                max={book.copies}
-                onChange={handleCopiesChange}
-                className="w-20 p-2 border-2 border-gray-300 outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-x-4 mt-2">
-              <span className="text-gray-500 font-bold w-48">Due Date:</span>
-              <input
-                value={date}
-                type="date"
-                onChange={handleDateChange}
-                className="w-40 p-2 border-2 border-gray-300 outline-none"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex mt-4 items-center">
-              <button
-                className="px-4 py-2 drop-shadow-xl bg-white text-black font-medium cursor-pointer"
-                style={{
-                  boxShadow:
-                    '2px 2px 16px 0 rgba(0, 0, 0, 0.1), -2px -2px 16px 0 rgba(0, 0, 0, 0.1)',
-                }}
-                onClick={handleSubmit}
-              >
-                BORROW NOW
-              </button>
-
-              <button
-                className="ml-4 px-4 py-2 drop-shadow-xl bg-white text-red-600 font-medium cursor-pointer"
-                style={{
-                  boxShadow:
-                    '2px 2px 16px 0 rgba(0, 0, 0, 0.1), -2px -2px 16px 0 rgba(0, 0, 0, 0.1)',
-                }}
-                onClick={() => setDeleteButtonClicked(true)}
-              >
-                <Trash />
-              </button>
             </div>
           </div>
         </section>
