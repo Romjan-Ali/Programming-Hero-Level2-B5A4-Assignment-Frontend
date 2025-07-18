@@ -177,8 +177,8 @@ const EditBook = () => {
       } else if (name && name === 'isbn' && formData.isbn.trim().length < 5) {
         errors.isbn = 'ISBN should be at least 5 characters'
         hasError = true
-      } else if (name && name === 'isbn' && formData.isbn.trim().length > 10) {
-        errors.isbn = 'ISBN should be at most 10 characters'
+      } else if (name && name === 'isbn' && formData.isbn.trim().length > 20) {
+        errors.isbn = 'ISBN should be at most 20 characters'
         hasError = true
       }
 
@@ -237,8 +237,8 @@ const EditBook = () => {
       } else if (formData.isbn.trim().length < 5) {
         errors.isbn = 'ISBN should be at least 5 characters'
         hasError = true
-      } else if (formData.isbn.trim().length > 10) {
-        errors.isbn = 'ISBN should be at most 10 characters'
+      } else if (formData.isbn.trim().length > 20) {
+        errors.isbn = 'ISBN should be at most 20 characters'
         hasError = true
       }
 
@@ -385,7 +385,7 @@ const EditBook = () => {
               type="text"
               name="isbn"
               min={5}
-              max={12}
+              max={20}
               value={formData.isbn}
               onChange={handleChange}
               onBlur={validateForm}
