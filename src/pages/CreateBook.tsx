@@ -183,9 +183,9 @@ const CreateBook = () => {
       } else if (
         name &&
         name === 'description' &&
-        formData.description.trim().length > 200
+        formData.description.trim().length > 2000
       ) {
-        errors.description = 'Description should be at most 200 characters'
+        errors.description = 'Description should be at most 2000 characters'
         hasError = true
       }
 
@@ -232,8 +232,8 @@ const CreateBook = () => {
       } else if (formData.description.trim().length < 15) {
         errors.description = 'Description should be at least 15 characters'
         hasError = true
-      } else if (formData.description.trim().length > 200) {
-        errors.description = 'Description should be at most 200 characters'
+      } else if (formData.description.trim().length > 2000) {
+        errors.description = 'Description should be at most 2000 characters'
         hasError = true
       }
 
@@ -422,7 +422,7 @@ const CreateBook = () => {
             <textarea
               name="description"
               minLength={15}
-              maxLength={200}
+              maxLength={2000}
               rows={3}
               value={formData.description}
               onChange={handleChange}
