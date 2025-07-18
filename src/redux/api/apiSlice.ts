@@ -48,8 +48,8 @@ export interface UniqueAuthorsResponse {
 }
 
 const base_url =
-  import.meta.env.NODE_ENV !== 'development'
-    ? import.meta.env.BASE_URL
+  import.meta.env.VITE_NODE_ENV !== 'development'
+    ? import.meta.env.VITE_BASE_URL
     : 'http://localhost:4252/api'
 
 export const apiSlice = createApi({
